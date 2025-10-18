@@ -190,107 +190,54 @@
   - Low-score → auto-suppressed (noise bucket).
 - Analysts submit feedback (TP/FP) through the UI → `Feedback Service`, closing the loop for model retraining and rule suppression proposals.
 
-#### 1.2 Architecture Patterns
-- **Pattern Used:** [e.g., Microservices, Monolith, Event-Driven, Layered, etc.]
-- **Justification:** [Why this pattern was chosen for this specific use case]
-- **Trade-offs:** [What you gained vs. what you sacrificed]
+#### 1.3 Scalability & Fault Tolerance
+**Distribute event processing across nodes**
+**1. Wazuh Agent** 
+Enable local buffering: queue_size tuned per host (avoid drops on wazuh server).
+**2. Logstash (Ingest Gateway) → Kafka**
+- Logstash persistent queue enabled.
+- Kafka Settings:
+  - `acks=all` for guaranted no data loss
+  - `enable.idempotence=true`  for guaranted exactly-once delivery semantics
+**3. Kafka -> Microservices**
+- Consumer Group. each service scales horizontally by add adding consumer in the same group.
 
-#### 1.3 API Design
-```yaml
-# Example API specification
-/api/v1/users:
-  GET: [Description]
-  POST: [Description]
-  
-/api/v1/users/{id}:
-  GET: [Description]
-  PUT: [Description]
-  DELETE: [Description]
+**Handle API rate limits & node failures gracefully**
+**1. Exponential backoff with jitter**
+- Add jitter (a small random offset) to avoid all clients retrying at the same time. to prevents cascading overload when APIs are unstable.
+```
+200 ms → 400 ms → 800 ms → 1.6 s → 3.2 s … up to 30 s
 ```
 
-#### 1.4 Database Schema
-```sql
--- [Database schema design]
--- Include tables, relationships, and key constraints
-```
+**2. Caching**
+- Using redis if there is api that the data does'nt frequently change like config, asset or cve.
 
-#### 1.5 Security Considerations
-- [ ] **Authentication:** [Method and implementation]
-- [ ] **Authorization:** [RBAC, permissions model]
-- [ ] **Data Protection:** [Encryption, PII handling]
-- [ ] **API Security:** [Rate limiting, input validation]
+**Maintain system state consistency**
+**1. Shadow state**
+- Rule Service stores the intended rules/decoders/suppressions in Git
+- Every change is a Change Set (ID, author, rollout plan)
+**2. Hourly reconcile job**
+Pull active rules from Wazuh Manager (REST/SSH read).
+**3. Idempotency & exactly-once effects**
+All policy pushes are idempotent (same request → same result). Include content hash in the API payload.
 
-### Task 2: Data Flow Explanation
+#### 1.4 Ethical & Operational Constraints 
+**1. Confidence Thresholding**
+- The Scoring Service only auto-suppresses alerts when the AI confidence is very low (e.g., < 0.3).
+- Alerts with medium or uncertain confidence go to manual analyst review.
+- High-risk alerts are always escalated to SOAR or human analysts.
 
-#### 2.1 Request Flow Diagram
-```
-[User] → [Load Balancer] → [API Gateway] → [Service Layer] → [Database]
-```
+**2. Immutable Event Trail**
+- Every action—rule change, model update, SOAR command—is write on audit db.
 
-#### 2.2 Detailed Data Flow Steps
+**3. Rollback & Version Control**
+- Rule Service and SOAR maintain Git-style versioning:
+  - Every rule or playbook change = new commit with diff & approver.
+  - Rollback = one-click restore of previous version.
 
-**Step 1: User Request**
-- [ ] [Description of initial user action]
-- [ ] [Input validation process]
+**4. Access Control & RBAC**
+- There is role for review and feeback and approval for recheck. Separates duties and prevents misuse of automation. 
 
-**Step 2: Processing Layer**
-- [ ] [How the system processes the request]
-- [ ] [Business logic implementation]
-
-**Step 3: Data Persistence**
-- [ ] [How data is stored/retrieved]
-- [ ] [Transaction handling]
-
-**Step 4: Response Generation**
-- [ ] [How response is formatted]
-- [ ] [Error handling mechanism]
-
-#### 2.3 Data Synchronization
-- [ ] **Strategy:** [Eventual consistency, Strong consistency, etc.]
-- [ ] **Implementation:** [How data sync is handled across services]
-
----
-
-### Task 3: Scalability & Fault Tolerance
-
-#### 3.1 Scalability Strategy
-
-**Horizontal Scaling:**
-- [ ] [Auto-scaling policies]
-- [ ] [Load balancing strategy]
-- [ ] [Database sharding/partitioning]
-
-**Vertical Scaling:**
-- [ ] [Resource optimization]
-- [ ] [Performance tuning]
-
-**Caching Strategy:**
-- [ ] **Application Level:** [Redis, Memcached, etc.]
-- [ ] **Database Level:** [Query optimization, indexing]
-- [ ] **CDN:** [Static content delivery]
-
-#### 3.2 Fault Tolerance Mechanisms
-
-**Redundancy:**
-- [ ] [Multi-region deployment]
-- [ ] [Database replication]
-- [ ] [Service redundancy]
-
-**Circuit Breaker Pattern:**
-- [ ] [Implementation details]
-- [ ] [Fallback mechanisms]
-
-**Monitoring & Alerting:**
-- [ ] [Health checks]
-- [ ] [Performance monitoring]
-- [ ] [Error tracking]
-
-**Disaster Recovery:**
-- [ ] [Backup strategy]
-- [ ] [Recovery procedures]
-- [ ] [RTO/RPO targets]
-
----
 
 ## Part 2: Coding Challenge
 
