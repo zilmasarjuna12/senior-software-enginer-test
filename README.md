@@ -143,16 +143,6 @@
 4. Result
   Over time, the system continuously becomes more precise — reducing alert noise, improving response speed, and lowering the false positive rate.
 
-
-**Technology Stack:**
-- **Frontend:** [Technology choices and rationale]
-- **Backend:** [Technology choices and rationale]
-- **Database:** [Technology choices and rationale]
-- **Infrastructure:** [Technology choices and rationale]
-- **Message Queue/Event Bus:** [If applicable]
-- **Caching Layer:** [If applicable]
-
-
 #### 1.2 Data Flow Explanation
 **1. Agent Log**
 - Each `wazuh-agent` continuously gathers logs from hosts, servers, network devices.
