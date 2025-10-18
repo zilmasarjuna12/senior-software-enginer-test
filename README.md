@@ -83,7 +83,7 @@
     - Python (fast api)
 
 - **Feedback Service:**
-  - **Purpose:**Collect analyst validation labels (True Positive, False Positive, Needs Info) and teach the AI model how to improve its scoring accuracy over time.
+  - **Purpose:** Collect analyst validation labels (True Positive, False Positive, Needs Info) and teach the AI model how to improve its scoring accuracy over time.
   - **Inputs:** 
     - Analyst actions from UI.
     - Scored alerts from Kafka (alert.scored).
@@ -136,6 +136,19 @@
     - Visualized analyst feedback, rule proposals, SOAR triggers.
   - **Notes:**
     - Vite
+
+** Feedback Loop from analyst validation improve future precision
+1. Analyst Validation (via UI):
+  - Analyst mark alert as `True Positive` or `False Positive` and there reason as well on the dashboard
+  - the labeled data then sent to the Feedback Service.
+2. Feedback Processing:
+  - Feedback service store the labeled event and forward this data to the retraining pipeline. If recurring False Positive patterns are detected, the service sends a suppression proposal to the Rule Service.
+3. Model & Rule Improvement
+  - Scoring Service uses the newly retrained model to improve the accuracy of future alert scoring.
+  - Rule Service applies approved suppression or adjustment rules, directly reducing false positives in Wazuh.
+4. Result
+  Over time, the system continuously becomes more precise — reducing alert noise, improving response speed, and lowering the false positive rate.
+
 
 **Technology Stack:**
 - **Frontend:** [Technology choices and rationale]
