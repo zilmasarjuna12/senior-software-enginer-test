@@ -9,9 +9,9 @@
 
 ### Task 1: Architecture Design
 
-#### 1.1 High-Level Architecture Overview
+#### 1.1 Architecture Design
 
-![System Architecture Diagram](docs/diagram.png)
+![Architecture Design Diagram](docs/diagram.png)
 
 
 **Components:**
@@ -151,6 +151,44 @@
 - **Infrastructure:** [Technology choices and rationale]
 - **Message Queue/Event Bus:** [If applicable]
 - **Caching Layer:** [If applicable]
+
+
+#### 1.2 Data Flow Explanation
+**1. Agent Log**
+- Each `wazuh-agent` continuously gathers logs from hosts, servers, network devices.
+- `wazuh-agent` buffer logs locally before sending them to `wazuh-manager`.
+- `wazuh-agent` forward the raw logs to `wazuh-manager`.
+
+**2. Wazuh Manager**
+- `wazuh-manager` receive the logs and decode and normalize the event using `decoders`.
+- after that applies rules matching logic to detect anomalies or suspious activity using `rules`
+- after match with that rules will forward to `wazuh-indexer` under `wazuh-alert-*`
+
+**3. Elastic Indexer -> Ingest Gateway**
+- The `Ingest Gateway (Logstash)` subscribes to the Elastic indices. , extracts new alerts, and normalizes the payload into a common JSON schema.
+- These normalized alerts are pushed into Kafka topic `event.raw`.
+
+**4. Alert Intelligence Service**
+- Consumes `event.raw` and performs enrichment + correlation:
+  - Asset enrichment: add asset metadata (owner, critically, tags, maintenance window)
+  - Threat intelligence: threat intel (IP/domain reputation, ASN, geo) and vulnerability info (CVE information).
+  - Correlation: aggregate repeated alerts from the same IP to the same target and behaviour between event.
+- Outputs are publishes to Kafka topic `alert.intelligence` for downstream AI scoring.
+
+**5. Scoring Service**
+- Consume `alert.intelligence`.
+- Extracts contextual features and sends them inference ML/AI.
+- Produces a risk score (0–1) and a recommendation (auto-suppress, needs-review, critical-escalate).
+- Output publishes to Kafka topic alert.scored.
+ 
+
+**6. Analyst Review & Feedback**
+- The UI receives scored alerts (through the API Gateway).
+- Analysts review only relevant alerts:
+  - High-score → escalated to SOAR.
+  - Medium-score → manual review.
+  - Low-score → auto-suppressed (noise bucket).
+- Analysts submit feedback (TP/FP) through the UI → `Feedback Service`, closing the loop for model retraining and rule suppression proposals.
 
 #### 1.2 Architecture Patterns
 - **Pattern Used:** [e.g., Microservices, Monolith, Event-Driven, Layered, etc.]
