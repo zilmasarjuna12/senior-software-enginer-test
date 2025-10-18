@@ -137,7 +137,7 @@
   - **Notes:**
     - Vite
 
-** Feedback Loop from analyst validation improve future precision
+** Feedback Loop from analyst validation improve future precision **
 1. Analyst Validation (via UI):
   - Analyst mark alert as `True Positive` or `False Positive` and there reason as well on the dashboard
   - the labeled data then sent to the Feedback Service.
