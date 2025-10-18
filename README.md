@@ -13,18 +13,129 @@
 
 ![System Architecture Diagram](docs/diagram.png)
 
-**Architecture Description:**
-```
-[Provide a detailed description of your architecture diagram here. 
-Explain the main components, their relationships, and how they work together.
-Include reasoning for your architectural choices.]
-```
 
-**Key Components:**
-- [ ] **Component 1:** [Description and responsibilities]
-- [ ] **Component 2:** [Description and responsibilities]
-- [ ] **Component 3:** [Description and responsibilities]
-- [ ] **Component 4:** [Description and responsibilities]
+**Components:**
+- **Ingest Gateway (Logstash):**
+  - **Purpose:** Receives, normalizes, and routes security events from Wazuh indexer to downstream processing systems
+  - **Inputs:** 
+    - Wazuh Indexer (wazuh-alerts-* indices)
+    - Optional other sensors (Suricata, Zeek, OT telemetry).
+  - **Outputs:** Kafka topic: event.raw
+  - **Responsibilities:**
+    - Receive the event from wazuh indexer
+    - Forward to Kafka (event.raw).
+  - **Notes:**
+    - Logstash pipeline with JSON codec and Kafka output plugin.
+
+- **IAM Service:**
+  - **Purpose:** Provide authentication, authorization, and tenant/user context for analysts, API clients, and internal services.
+  - **Inputs:** Requests from UI, API Gateway
+  - **Outputs:** JWT tokens / service credentials
+  - **Responsibilities:**
+    - Manage user accounts, roles
+    - Provide /whoami and /verify endpoints for internal service auth.
+  - **Notes:** 
+    - Centralized identity for SOC microservices.
+    
+- **Rule Service:**
+  - **Purpose:** Manage versioned detection rules, suppressions, and policy configurations integrated with Wazuh Manager.
+  - **Inputs:**
+    - Analyst / Admin via UI or API.
+    - Automation proposals (from Scoring / Feedback).
+  - **Outputs:**
+    - YAML/JSON rule configs.
+    - Approved rule changes pushed to Wazuh via REST.
+  - **Responsibilities:**
+    - CRUD for custom rules/decoders/suppressions.
+    - Validate syntax and test new rules against sample logs before deployment.
+    - Rule versioning and deployment
+    - Pattern matching and correlation
+    - Performance optimization and caching
+  - **Notes:**
+    - Go Service
+    - Audit log every rule push.
+
+- **Alert Intelligence Service:**
+  - **Purpose:** Enrich raw Wazuh events with contextual data, then perform short-term correlation and aggregation into alert candidates.
+  - **Inputs:** Kafka topic: event.raw
+  - **Outputs:** Kafka topic: alert.intelligence (enriched + correlated events)
+  - **Responsibilities:**
+    - Add asset metadata (owner, critically, tags, maintenance window)
+    - Add threat intel (IP/domain reputation, ASN, geo).
+    - Add vulnerability info (CVE status).
+    - Correlation aggregate repeated alerts from the same IP to the same target
+    - Correlation behaviour between event
+
+  - **Notes:** 
+    - Go Service
+    - Use redis for enrichment (asset metadata, threat intel, cve)
+
+- **Scoring Service:**
+  - **Purpose:** Use ML/AI models to assign risk scores and decisions to enriched/correlated alerts.
+  - **Inputs:** Kafka topic: alert.intelligence
+  - **Outputs:** Kafka topic: alert.scored
+  - **Responsibilities:**
+    - Extract features from alert payloads intelegence
+    - Call ML inference
+    - Produce {score, confidence, reasons, recommendation}.
+    - Tag “auto-suppress”, “needs-review”, or “critical-escalate”.
+  - **Notes:**
+    - Python (fast api)
+
+- **Feedback Service:**
+  - **Purpose:**Collect analyst validation labels (True Positive, False Positive, Needs Info) and teach the AI model how to improve its scoring accuracy over time.
+  - **Inputs:** 
+    - Analyst actions from UI.
+    - Scored alerts from Kafka (alert.scored).
+  - **Outputs:**
+    - Feedback events (alert.feedback Kafka).
+  - **Responsibilities:**
+    - Store immutable feedback record (alert_id, analyst, label, reason).
+    - Trigger retraingin pipeline.
+    - Allow rule suppression proposal generation for consistent FP patterns.
+  - **Notes:** 
+    - Python (fast api)
+
+- **SOAR Service:**
+  - **Purpose:** Execute automated playbooks (containment, notification, ticketing) based on scored alert decisions.
+  - **Inputs:**
+    - Kafka topic: alert.scored.
+    - Manual trigger from UI.
+  - **Outputs:**
+    - action logs
+    - Integration with external systems (email, Slack, firewall API).
+  - **Responsibilities:**
+    - Parse recommendation: escalate/contain/suppress.
+    - Trigger response flows
+    - Record all playbook executions and results.
+    - Action logging and audit trails
+    - Support rollback actions and simulation/dry-run mode.
+  - **Notes:**
+    - Go Service
+    - Log Every Action
+
+- **API Gateway:**
+  - **Purpose:** Unified secure entry point for UI, third-party integrations, and inter-service calls.
+  - **Inputs:** HTTP/gRPC requests from UI and clients.
+  - **Outputs:** Proxy routes to internal services (IAM, Rule, Feedback, SOAR, Scoring results).
+  - **Responsibilities:**
+    - JWT validation via IAM.
+    - Rate limiting and logging.
+    - routing.
+  - **Notes:**
+    - Traefik / ApiSix NGInx.
+    - Enforce RBAC between services.
+
+- **UI:**
+  - **Purpose:** Provide SOC analysts and admins a unified dashboard for alert review, feedback submission, rule management, and SOAR actions.
+  - **Inputs:**
+    - REST API via API Gateway.
+    - WebSocket/Server-Sent Events for real-time alerts.
+  - **Outputs:** Visualized analyst feedback, rule proposals, SOAR triggers.
+  - **Responsibilities:**
+    - Visualized analyst feedback, rule proposals, SOAR triggers.
+  - **Notes:**
+    - Vite
 
 **Technology Stack:**
 - **Frontend:** [Technology choices and rationale]
