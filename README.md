@@ -17,25 +17,24 @@
 **Components:**
 - **Ingest Gateway (Logstash):**
   - **Purpose:** Receives, normalizes, and routes security events from Wazuh indexer to downstream processing systems
-  - **Inputs:** 
-    - Wazuh Indexer (wazuh-alerts-* indices)
-    - Optional other sensors (Suricata, Zeek, OT telemetry).
-  - **Outputs:** Kafka topic: event.raw
+  - **Inputs:** Wazuh Indexer (wazuh-alerts-* indices).
+  - **Outputs:** Event are published to Kafka topic: `event.raw`.
   - **Responsibilities:**
     - Receive the event from wazuh indexer
-    - Forward to Kafka (event.raw).
+    - Normalize and parse JSON logs.
+    - Forward normalized data to Kafka.
   - **Notes:**
-    - Logstash pipeline with JSON codec and Kafka output plugin.
+    - Logstash pipeline with JSON and Kafka output plugin.
 
 - **IAM Service:**
-  - **Purpose:** Provide authentication, authorization, and tenant/user context for analysts, API clients, and internal services.
+  - **Purpose:** Handles authentication and authorization for both users (analysts/admins) and internal services.
   - **Inputs:** Requests from UI, API Gateway
-  - **Outputs:** JWT tokens / service credentials
+  - **Outputs:** JWT tokens / internal service credentials
   - **Responsibilities:**
     - Manage user accounts, roles
     - Provide /whoami and /verify endpoints for internal service auth.
   - **Notes:** 
-    - Centralized identity for SOC microservices.
+    - Go Service
     
 - **Rule Service:**
   - **Purpose:** Manage versioned detection rules, suppressions, and policy configurations integrated with Wazuh Manager.
@@ -46,23 +45,21 @@
     - YAML/JSON rule configs.
     - Approved rule changes pushed to Wazuh via REST.
   - **Responsibilities:**
-    - CRUD for custom rules/decoders/suppressions.
-    - Validate syntax and test new rules against sample logs before deployment.
-    - Rule versioning and deployment
-    - Pattern matching and correlation
-    - Performance optimization and caching
+    - CRUD for detection rules, decoders, and suppression policies.
+    - Syntax validation and rule testing against sample logs before deployment.
+    - Rule versioning, auditing, and rollback tracking.
   - **Notes:**
     - Go Service
     - Audit log every rule push.
 
 - **Alert Intelligence Service:**
   - **Purpose:** Enrich raw Wazuh events with contextual data, then perform short-term correlation and aggregation into alert candidates.
-  - **Inputs:** Kafka topic: event.raw
-  - **Outputs:** Kafka topic: alert.intelligence (enriched + correlated events)
+  - **Inputs:** Kafka topic: `event.raw`
+  - **Outputs:** Kafka topic: `alert.intelligence` (enriched + correlated events)
   - **Responsibilities:**
     - Add asset metadata (owner, critically, tags, maintenance window)
     - Add threat intel (IP/domain reputation, ASN, geo).
-    - Add vulnerability info (CVE status).
+    - Add vulnerability info (CVE information).
     - Correlation aggregate repeated alerts from the same IP to the same target
     - Correlation behaviour between event
 
@@ -72,11 +69,10 @@
 
 - **Scoring Service:**
   - **Purpose:** Use ML/AI models to assign risk scores and decisions to enriched/correlated alerts.
-  - **Inputs:** Kafka topic: alert.intelligence
-  - **Outputs:** Kafka topic: alert.scored
+  - **Inputs:** Kafka topic: `alert.intelligence`
+  - **Outputs:** Kafka topic: `alert.scored`
   - **Responsibilities:**
-    - Extract features from alert payloads intelegence
-    - Call ML inference
+    - Extract alert features and run inference on a trained model.
     - Produce {score, confidence, reasons, recommendation}.
     - Tag “auto-suppress”, “needs-review”, or “critical-escalate”.
   - **Notes:**
@@ -86,20 +82,20 @@
   - **Purpose:** Collect analyst validation labels (True Positive, False Positive, Needs Info) and teach the AI model how to improve its scoring accuracy over time.
   - **Inputs:** 
     - Analyst actions from UI.
-    - Scored alerts from Kafka (alert.scored).
+    - Scored alerts from Kafka `alert.scored`.
   - **Outputs:**
-    - Feedback events (alert.feedback Kafka).
+    - Feedback events `alert.feedback`
   - **Responsibilities:**
     - Store immutable feedback record (alert_id, analyst, label, reason).
-    - Trigger retraingin pipeline.
-    - Allow rule suppression proposal generation for consistent FP patterns.
+    - Detect recurring False Positive patterns and propose suppression rules.
+    - Trigger retraining pipeline updates for the AI model.
   - **Notes:** 
     - Python (fast api)
 
 - **SOAR Service:**
   - **Purpose:** Execute automated playbooks (containment, notification, ticketing) based on scored alert decisions.
   - **Inputs:**
-    - Kafka topic: alert.scored.
+    - Kafka topic: `alert.scored`.
     - Manual trigger from UI.
   - **Outputs:**
     - action logs
@@ -119,12 +115,10 @@
   - **Inputs:** HTTP/gRPC requests from UI and clients.
   - **Outputs:** Proxy routes to internal services (IAM, Rule, Feedback, SOAR, Scoring results).
   - **Responsibilities:**
-    - JWT validation via IAM.
-    - Rate limiting and logging.
-    - routing.
+    - JWT validation via IAM Service.
+    - Handle routing, rate limiting, and access logging.
   - **Notes:**
-    - Traefik / ApiSix NGInx.
-    - Enforce RBAC between services.
+    - Can use Traefik, API Six, or NGINX.
 
 - **UI:**
   - **Purpose:** Provide SOC analysts and admins a unified dashboard for alert review, feedback submission, rule management, and SOAR actions.
@@ -140,12 +134,12 @@
 **Feedback Loop from analyst validation improve future precision**
 1. Analyst Validation (via UI):
   - Analyst mark alert as `True Positive` or `False Positive` and there reason as well on the dashboard
-  - the labeled data then sent to the Feedback Service.
+  - the labeled data then sent to the `Feedback Service`.
 2. Feedback Processing:
-  - Feedback service store the labeled event and forward this data to the retraining pipeline. If recurring False Positive patterns are detected, the service sends a suppression proposal to the Rule Service.
+  - `Feedback Service` store the labeled event and forward this data to the retraining pipeline. If recurring False Positive patterns are detected, the service sends a suppression proposal to the `Rule Service`.
 3. Model & Rule Improvement
-  - Scoring Service uses the newly retrained model to improve the accuracy of future alert scoring.
-  - Rule Service applies approved suppression or adjustment rules, directly reducing false positives in Wazuh.
+  - `Scoring Service` uses the newly retrained model to improve the accuracy of future alert scoring.
+  - `Rule Service` applies approved suppression or adjustment rules, directly reducing false positives in Wazuh.
 4. Result
   Over time, the system continuously becomes more precise — reducing alert noise, improving response speed, and lowering the false positive rate.
 
