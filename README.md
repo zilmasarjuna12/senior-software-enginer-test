@@ -279,8 +279,8 @@ When rule sensitivity is increased (e.g., lowering thresholds in syscheck for fi
 
 
 ### 3.3  Measuring Alert-Fatigue Reduction After Automation
-You can use `SOC MTTR (Mean Time To Respond)` with compare MTTR before vs. after automation deployment. 
-Lower MTTR or reduced alert volume indicates better efficiency and reduced noise.
+You can use `MTTR (Mean Time To Respond)`, `Mean Time to Triage (MTTT)` and `daily alert volume`. if you reduce `MTTR`, `MTTT` and `alert volume` indicates better efficiency and reduced noise.
+
 
 ## Part 4: Behavioral & Design Reasoning
 
