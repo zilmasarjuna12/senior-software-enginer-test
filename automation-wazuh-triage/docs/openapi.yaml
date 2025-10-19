@@ -2,8 +2,8 @@ openapi: 3.0.0
 x-stoplight:
   id: q9yq2ltpy0zp7
 info:
-  title: Authentication API
-  description: API for user registration and login
+  title: Wazuh Triage Automation API
+  description: API for Wazuh triage automation
   version: 1.0.0
 paths:
   /health:
@@ -6049,9 +6049,3 @@ paths:
               Example 1:
                 value:
                   reason: Test
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
