@@ -53,9 +53,14 @@ func (r *wazuhEventRepository) FetchSecurityEvents(ctx context.Context, filter *
 		esQuery = esQuery.Filter(rangeQuery)
 	}
 
+	limit := 10
+	if filter.Limit != 0 {
+		limit = filter.Limit
+	}
+
 	searchResult, err := r.openSearchClient.Search().
 		Index("wazuh-alerts-*").
-		Size(filter.Limit).
+		Size(limit).
 		Sort("timestamp", false).
 		Query(esQuery).
 		Pretty(false).
