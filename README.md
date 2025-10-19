@@ -182,17 +182,21 @@
 
 #### 1.3 Scalability & Fault Tolerance
 **Distribute event processing across nodes**
+
 **1. Wazuh Agent** 
 Enable local buffering: queue_size tuned per host (avoid drops on wazuh server).
+
 **2. Logstash (Ingest Gateway) → Kafka**
 - Logstash persistent queue enabled.
 - Kafka Settings:
   - `acks=all` for guaranted no data loss
   - `enable.idempotence=true`  for guaranted exactly-once delivery semantics
+
 **3. Kafka -> Microservices**
 - Consumer Group. each service scales horizontally by add adding consumer in the same group.
 
 **Handle API rate limits & node failures gracefully**
+
 **1. Exponential backoff with jitter**
 - Add jitter (a small random offset) to avoid all clients retrying at the same time. to prevents cascading overload when APIs are unstable.
 ```
@@ -200,14 +204,17 @@ Enable local buffering: queue_size tuned per host (avoid drops on wazuh server).
 ```
 
 **2. Caching**
-- Using redis if there is api that the data does'nt frequently change like config, asset or cve.
+- Using redis if there is  data does'nt frequently change like config, asset or cve.
 
 **Maintain system state consistency**
+
 **1. Shadow state**
 - Rule Service stores the intended rules/decoders/suppressions in Git
 - Every change is a Change Set (ID, author, rollout plan)
+
 **2. Hourly reconcile job**
 Pull active rules from Wazuh Manager (REST/SSH read).
+
 **3. Idempotency & exactly-once effects**
 All policy pushes are idempotent (same request → same result). Include content hash in the API payload.
 
