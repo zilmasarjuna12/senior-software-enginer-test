@@ -59,9 +59,10 @@ func SetupRoutes(app *fiber.App, openSearchClient *elastic.Client) {
 	v1 := app.Group("/v1")
 
 	v1.Post("/events", eventHandler.FetchEvents)
-	v1.Post("/event/:event_id/close", eventHandler.AddToClose)
+	v1.Post("/events/:event_id/close", eventHandler.AddToClose)
 	v1.Get("/events/close", eventHandler.FetchClosedEvents)
 	v1.Get("/events/close/:id", eventHandler.FetchClosedEventByID)
+	v1.Patch("/events/close/:id/reason", eventHandler.UpdateClosedEventReason)
 
 	v1.Get("/rules/:id", ruleHandler.GetDetailRules)
 	v1.Get("/rules/file/:filename", ruleHandler.GetListRulesByFiles)

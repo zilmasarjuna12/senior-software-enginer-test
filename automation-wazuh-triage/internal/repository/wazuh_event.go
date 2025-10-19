@@ -3,6 +3,7 @@ package repository
 import (
 	"automation-wazuh-triage/internal/domain"
 	"automation-wazuh-triage/internal/entity"
+	"automation-wazuh-triage/internal/model"
 	"automation-wazuh-triage/pkg/logger"
 	"context"
 	"encoding/json"
@@ -24,7 +25,7 @@ func NewWazuhEventRepository(
 	}
 }
 
-func (r *wazuhEventRepository) FetchSecurityEvents(ctx context.Context, severity int, tags []string) ([]*elastic.SearchHit, error) {
+func (r *wazuhEventRepository) FetchSecurityEvents(ctx context.Context, filter *model.FetchEventsRequest) ([]*elastic.SearchHit, error) {
 	log := logger.WithRequestID(ctx)
 
 	esQuery := elastic.NewBoolQuery().
@@ -33,8 +34,28 @@ func (r *wazuhEventRepository) FetchSecurityEvents(ctx context.Context, severity
 				Format("epoch_millis"),
 		)
 
+	if filter.LevelRange != nil {
+		rangeQuery := elastic.NewRangeQuery("rule.level")
+
+		if filter.LevelRange.Gte != nil {
+			rangeQuery = rangeQuery.Gte(filter.LevelRange.Gte)
+		}
+		if filter.LevelRange.Gt != nil {
+			rangeQuery = rangeQuery.Gt(filter.LevelRange.Gt)
+		}
+		if filter.LevelRange.Lte != nil {
+			rangeQuery = rangeQuery.Lte(filter.LevelRange.Lte)
+		}
+		if filter.LevelRange.Lt != nil {
+			rangeQuery = rangeQuery.Lt(filter.LevelRange.Lt)
+		}
+
+		esQuery = esQuery.Filter(rangeQuery)
+	}
+
 	searchResult, err := r.openSearchClient.Search().
 		Index("wazuh-alerts-*").
+		Size(filter.Limit).
 		Sort("timestamp", false).
 		Query(esQuery).
 		Pretty(false).

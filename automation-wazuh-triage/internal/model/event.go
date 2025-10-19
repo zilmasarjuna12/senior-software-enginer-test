@@ -7,11 +7,24 @@ import (
 )
 
 type FetchEventsRequest struct {
-	Severity int      `json:"severity"`
-	Tags     []string `json:"tags"`
+	LevelRange     *RangeQuery `json:"level_range,omitempty"`
+	Limit          int         `json:"limit,omitempty"`
+	AutoAddToClose bool        `json:"auto_add_to_close,omitempty"`
+	CloseReason    string      `json:"close_reason,omitempty"`
+}
+
+type RangeQuery struct {
+	Gte interface{} `json:"gte,omitempty"` // Greater than or equal
+	Gt  interface{} `json:"gt,omitempty"`  // Greater than
+	Lte interface{} `json:"lte,omitempty"` // Less than or equal
+	Lt  interface{} `json:"lt,omitempty"`  // Less than
 }
 
 type CloseEventRequest struct {
+	Reason string `json:"reason"`
+}
+
+type UpdateClosedEventReasonRequest struct {
 	Reason string `json:"reason"`
 }
 
