@@ -235,119 +235,59 @@ All policy pushes are idempotent (same request → same result). Include content
 This folder contains a comprehensive Wazuh Security Event Triage Automation System with Clean Architecture implementation, including all source code, API documentation, and usage examples.
 
 ## Part 3: Analytical Case Study
-
-### Case Study Overview
+### 3.1 Confusion Matrix
+**Given Data**
+|     Metric     | Symbol | Value |
+| :------------: | :----: | :---: |
+|  True Positive | **TP** |  320  |
+| False Positive | **FP** |   80  |
+| False Negative | **FN** |   40  |
+|  True Negative | **TN** |  560  |
+**1. Precision**
 ```
-[Summarize the case study scenario]
+Precision = TP / (TP + FP)
+Precision = 320 / (320 + 80)
+Precision = 0.80 = 80%
 ```
-
-### Problem Analysis
-
-#### 3.1 Current State Assessment
-- [ ] **Strengths:** [What's working well]
-- [ ] **Weaknesses:** [Pain points and bottlenecks]
-- [ ] **Opportunities:** [Areas for improvement]
-- [ ] **Threats:** [Potential risks]
-
-#### 3.2 Root Cause Analysis
-1. **Primary Issues:**
-   - [ ] Issue 1: [Description and impact]
-   - [ ] Issue 2: [Description and impact]
-
-2. **Contributing Factors:**
-   - [ ] [Technical factors]
-   - [ ] [Process factors]
-   - [ ] [Resource factors]
-
-### Proposed Solutions
-
-#### 3.3 Short-term Solutions (0-3 months)
-- [ ] **Solution 1:** [Description, effort, impact]
-- [ ] **Solution 2:** [Description, effort, impact]
-
-#### 3.4 Medium-term Solutions (3-12 months)
-- [ ] **Solution 1:** [Description, effort, impact]
-- [ ] **Solution 2:** [Description, effort, impact]
-
-#### 3.5 Long-term Solutions (1+ years)
-- [ ] **Solution 1:** [Description, effort, impact]
-- [ ] **Solution 2:** [Description, effort, impact]
-
-### Implementation Plan
+**2. Recall (Sensitivity)**
 ```
-[Timeline, resources, milestones, success metrics]
+Recall = TP / (TP + FN)
+Recall = 320 / (320 + 40)
+Recall = 0.8889 = 88.9%
+```
+**3. F1 Score**
+```
+F1 = 2 × (Precision × Recall) / (Precision + Recall)
+F1 = 2 × (0.80 × 0.8889) / (0.80 + 0.8889)
+F1 = 0.842 = 84.2%
 ```
 
-### Risk Assessment
-- [ ] **Risk 1:** [Description, probability, impact, mitigation]
-- [ ] **Risk 2:** [Description, probability, impact, mitigation]
+### 3.2 Impact of Doubling Rule Sensitivity in Wazuh
+When rule sensitivity is increased (e.g., lowering thresholds in syscheck for file monitoring):
 
----
+| Metric | Effect | Reason |
+|:--------|:--------|:--------|
+| **Precision ↓** | Decreases | More benign activity triggers alerts (more false positives). |
+| **Recall ↑** | Increases | More real threats are caught (fewer false negatives). |
+| **F1 Score** | Mixed | Depends on how much precision is lost compared to recall gained. |
+
+**Operational Consequences**
+- Analyst fatigue increases due to more irrelevant alerts. 
+- Detection coverage improves but at the cost of noise and slower triage.  
+- System efficiency drops if automation isn’t used (e.g., false-positive handler or suppression rules).
+
+
+### 3.3  Measuring Alert-Fatigue Reduction After Automation
+You can use `SOC MTTR (Mean Time To Respond)` with compare MTTR before vs. after automation deployment. 
+Lower MTTR or reduced alert volume indicates better efficiency and reduced noise.
 
 ## Part 4: Behavioral & Design Reasoning
 
-### 4.1 Leadership Experience
+### 4.1 Describe a time you improved a detection pipeline or log processing system?
+answer: understanding the situation of our goal for building this detection pipeline. since our suffer from high alert noise, so that the goal is reduce false positives without losing visibility. so we add Added a Alert Intellagence Service (enrich and correlation) and scoring service. so that analysis can easily to analyse the event. and also analysis can mark them as `false positive` and then system will be proposes rule suppression so that can decrease the alert noise. 
 
-#### Question: [Insert specific behavioral question]
-**Situation:** [Describe the context]  
-**Task:** [What needed to be accomplished]  
-**Action:** [What you did specifically]  
-**Result:** [Outcome and impact]  
+### 4.2 How would you validate the impact of automation on SOC performance?
+answer: maybe we can add matric `daily alert volume`, `Mean Time to Triage (MTTT)` and `Analyst Satisfaction (survey)`
 
-### 4.2 Technical Decision Making
-
-#### Question: [Insert specific question about technical decisions]
-**Challenge:** [Describe the technical challenge]  
-**Options Considered:** 
-- [ ] Option 1: [Pros/Cons]
-- [ ] Option 2: [Pros/Cons]
-- [ ] Option 3: [Pros/Cons]
-
-**Decision Made:** [Your choice and reasoning]  
-**Outcome:** [Results and lessons learned]  
-
-### 4.3 Design Philosophy
-
-#### Question: [Insert design-related question]
-**Design Principles Applied:**
-- [ ] [Principle 1 and application]
-- [ ] [Principle 2 and application]
-- [ ] [Principle 3 and application]
-
-**Trade-offs Considered:**
-- [ ] [Trade-off 1: Benefits vs. Costs]
-- [ ] [Trade-off 2: Benefits vs. Costs]
-
-### 4.4 Problem-Solving Approach
-
-#### Question: [Insert problem-solving question]
-**Problem Definition:** [How you understood the problem]  
-**Investigation Process:** [Your approach to gathering information]  
-**Solution Development:** [How you developed solutions]  
-**Implementation:** [Execution strategy]  
-**Validation:** [How you verified success]  
-
-### 4.5 Collaboration & Communication
-
-#### Question: [Insert collaboration question]
-**Context:** [Team/project situation]  
-**Challenge:** [Communication or collaboration obstacle]  
-**Approach:** [Your strategy for working with others]  
-**Outcome:** [Results and relationship impact]  
-
----
-
-## Additional Considerations
-
-### Assumptions Made
-- [ ] [List any assumptions you made while solving the problems]
-
-### Questions for Clarification
-- [ ] [Questions you would ask in a real-world scenario]
-
-### Future Enhancements
-- [ ] [Ideas for extending or improving the solutions]
-
----
-
-**Note:** This template is designed to be comprehensive. Fill in each section with detailed, specific responses that demonstrate your technical expertise, problem-solving abilities, and leadership experience.
+### 4.3 A stakeholder wants to disable auto-closure after a missed alert incident, how would you handle it technically and diplomatically?
+answer: I would first analyze the incident data to confirm the root cause. instead of automatically closure mode we can approach the `review` so make sure that rule that propose must be review oin analyst. and add audit and rollback controls for every automated closure decision. for diplomatically response. maybe we can acknowledge the concern respectfully. and offer semi-automated mode while refining suppression logic. and maybe we can highligth the our metrics like MTTR, Analyst Satisfaction if the metrics goods. and provide post mitigation report for summarizing improvements so that we can propose a follow up plan.
