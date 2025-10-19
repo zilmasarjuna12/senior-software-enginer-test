@@ -10,7 +10,6 @@ type FetchEventsRequest struct {
 	LevelRange     *RangeQuery `json:"level_range,omitempty"`
 	Limit          int         `json:"limit,omitempty"`
 	AutoAddToClose bool        `json:"auto_add_to_close,omitempty"`
-	CloseReason    string      `json:"close_reason,omitempty"`
 }
 
 type RangeQuery struct {

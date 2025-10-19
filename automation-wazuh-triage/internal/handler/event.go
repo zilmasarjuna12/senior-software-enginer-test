@@ -93,13 +93,13 @@ func (h *EventHandler) AddToClose(c *fiber.Ctx) error {
 			log.WithError(err).WithField("event_id", eventID).Warn("[handler]: Event already closed")
 			return c.Status(fiber.StatusConflict).JSON(model.NewResponseError(err.Error()))
 		}
-		
+
 		// Check if it's an event not found error
 		if strings.Contains(err.Error(), "not found") {
 			log.WithError(err).WithField("event_id", eventID).Warn("[handler]: Event not found")
 			return c.Status(fiber.StatusNotFound).JSON(model.NewResponseError("Event not found"))
 		}
-		
+
 		log.WithError(err).Error("[handler]: Failed to close event")
 		return c.Status(fiber.StatusInternalServerError).JSON(model.NewResponseError("Failed to close event"))
 	}

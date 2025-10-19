@@ -47,13 +47,6 @@ func (u *eventUsecase) FetchEventsWithAutoClose(ctx context.Context, filter *mod
 
 	// If autoAddToClose is enabled, process each event
 	if filter.AutoAddToClose {
-		closeReason := filter.CloseReason
-		if closeReason == "" {
-			closeReason = "Auto-closed by fetch request"
-		}
-
-		log.WithField("event_count", len(searchResults)).Info("[usecase - event - FetchEventsWithAutoClose]: Auto-closing events")
-
 		successCount := 0
 		skipCount := 0
 
@@ -103,7 +96,6 @@ func (u *eventUsecase) FetchEventsWithAutoClose(ctx context.Context, filter *mod
 				EventID:  eventID,
 				RuleID:   securityEvent.Rule.ID,
 				RawEvent: string(hitJSON),
-				Reason:   closeReason,
 				Status:   "closed",
 				CloseAt:  time.Now(),
 			}
