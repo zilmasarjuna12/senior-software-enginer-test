@@ -11,6 +11,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/swagger"
 	"github.com/olivere/elastic/v7"
 )
 
@@ -45,6 +46,15 @@ func SetupRoutes(app *fiber.App, openSearchClient *elastic.Client) {
 			"timestamp": time.Now().Format(time.RFC3339),
 		})
 	})
+
+	// Swagger documentation
+	app.Get("/swagger/*", swagger.New(swagger.Config{
+		URL:         "/docs/openapi.yaml",
+		DeepLinking: false,
+	}))
+
+	// Serve the OpenAPI specification file
+	app.Static("/docs", "./docs")
 
 	v1 := app.Group("/v1")
 
