@@ -1,5 +1,9 @@
 package wazuh
 
+import (
+	"fmt"
+)
+
 func (w *Wazuh) GetRules(queryString string) ([]byte, error) {
 	err := w.authenticate()
 	if err != nil {
@@ -9,6 +13,10 @@ func (w *Wazuh) GetRules(queryString string) ([]byte, error) {
 	resp, err := w.Client.R().SetQueryString(queryString).Get("/rules")
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode() != 200 {
+		return nil, fmt.Errorf("GetRules failed: %s", resp.String())
 	}
 
 	return resp.Body(), nil
