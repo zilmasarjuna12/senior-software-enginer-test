@@ -1,4 +1,4 @@
-# Senior Software Engineer Test - Answer Template
+# Senior Software Engineer Test
 
 **Candidate Name:** Zilmas Arjuna Brata Sutrisno
 **Position:** Senior Software Engineer 
@@ -204,7 +204,7 @@ Enable local buffering: queue_size tuned per host (avoid drops on wazuh server).
 ```
 
 **2. Caching**
-- Using redis if there is  data does'nt frequently change like config, asset or cve.
+- Using redis if there is data does'nt frequently change like config, asset or cve.
 
 **Maintain system state consistency**
 
