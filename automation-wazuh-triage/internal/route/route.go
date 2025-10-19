@@ -4,7 +4,9 @@ import (
 	"automation-wazuh-triage/internal/handler"
 	"automation-wazuh-triage/internal/repository"
 	"automation-wazuh-triage/internal/usecase"
+	"automation-wazuh-triage/pkg/database"
 	"automation-wazuh-triage/pkg/middleware"
+	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -13,9 +15,24 @@ import (
 )
 
 func SetupRoutes(app *fiber.App, openSearchClient *elastic.Client) {
+	// Initialize SQLite database
+	db, err := database.InitSQLite("./data/events.db")
+	if err != nil {
+		log.Fatalf("Failed to initialize SQLite database: %v", err)
+	}
+
+	// Initialize repositories
 	eventRepository := repository.NewWazuhEventRepository(openSearchClient)
-	eventUsecase := usecase.NewEventUsecase(eventRepository)
+	closedEventRepository := repository.NewClosedEventRepository(db)
+	ruleRepository := repository.NewRuleRepository()
+
+	// Initialize usecase
+	eventUsecase := usecase.NewEventUsecase(eventRepository, closedEventRepository, ruleRepository)
+	ruleUsecase := usecase.NewRuleUsecase(ruleRepository)
+
+	// Initialize handler
 	eventHandler := handler.NewEventHandler(eventUsecase)
+	ruleHandler := handler.NewRuleHandler(ruleUsecase)
 
 	app.Use(middleware.RequestIDMiddleware())
 	app.Use(middleware.LoggingMiddleware())
@@ -32,4 +49,10 @@ func SetupRoutes(app *fiber.App, openSearchClient *elastic.Client) {
 	v1 := app.Group("/v1")
 
 	v1.Post("/events", eventHandler.FetchEvents)
+	v1.Post("/event/:event_id/close", eventHandler.AddToClose)
+	v1.Get("/events/close", eventHandler.FetchClosedEvents)
+	v1.Get("/events/close/:id", eventHandler.FetchClosedEventByID)
+
+	v1.Get("/rules/:id", ruleHandler.GetDetailRules)
+	v1.Get("/rules/file/:filename", ruleHandler.GetListRulesByFiles)
 }
