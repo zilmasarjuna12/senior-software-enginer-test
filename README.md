@@ -230,42 +230,9 @@ All policy pushes are idempotent (same request → same result). Include content
 
 
 ## Part 2: Coding Challenge
+**Complete Implementation Reference**: Please see the `automation-wazuh-triage/` folder for the full working solution.
 
-### Problem Statement
-```
-[Copy the exact problem statement here]
-```
-
-### Solution Approach
-```
-[Explain your approach and algorithm choice]
-```
-
-### Implementation
-
-#### Language: [Programming Language Used]
-
-```[language]
-// [Your code implementation here]
-// Include comments explaining key logic
-```
-
-### Time & Space Complexity
-- **Time Complexity:** O([complexity])
-- **Space Complexity:** O([complexity])
-- **Justification:** [Explain the complexity analysis]
-
-### Test Cases
-```[language]
-// [Test cases covering edge cases]
-```
-
-### Alternative Solutions
-```
-[Discuss alternative approaches and trade-offs]
-```
-
----
+This folder contains a comprehensive Wazuh Security Event Triage Automation System with Clean Architecture implementation, including all source code, API documentation, and usage examples.
 
 ## Part 3: Analytical Case Study
 
