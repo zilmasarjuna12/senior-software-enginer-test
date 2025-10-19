@@ -243,6 +243,7 @@ This folder contains a comprehensive Wazuh Security Event Triage Automation Syst
 | False Positive | **FP** |   80  |
 | False Negative | **FN** |   40  |
 |  True Negative | **TN** |  560  |
+
 **1. Precision**
 ```
 Precision = TP / (TP + FP)
@@ -284,7 +285,7 @@ Lower MTTR or reduced alert volume indicates better efficiency and reduced noise
 ## Part 4: Behavioral & Design Reasoning
 
 ### 4.1 Describe a time you improved a detection pipeline or log processing system?
-answer: understanding the situation of our goal for building this detection pipeline. since our suffer from high alert noise, so that the goal is reduce false positives without losing visibility. so we add Added a Alert Intellagence Service (enrich and correlation) and scoring service. so that analysis can easily to analyse the event. and also analysis can mark them as `false positive` and then system will be proposes rule suppression so that can decrease the alert noise. 
+answer: understanding the situation of our goal for building this detection pipeline. since our suffer from high alert noise, so that the goal is reduce false positives without losing visibility. so we add a Alert Intellagence Service (enrich and correlation) and scoring service. so that analysis can easily to analyse the event. and also analysis can mark them as `false positive` and then system will be proposes rule suppression so that can decrease the alert noise. 
 
 ### 4.2 How would you validate the impact of automation on SOC performance?
 answer: maybe we can add matric `daily alert volume`, `Mean Time to Triage (MTTT)` and `Analyst Satisfaction (survey)`
